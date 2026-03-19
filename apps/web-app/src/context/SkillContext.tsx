@@ -9,7 +9,44 @@ interface SkillContextType {
     refreshSkills: () => Promise<void>;
 }
 
+interface SkillsIndexUrlInput {
+    baseUrl: string;
+    origin: string;
+    pathname: string;
+}
+
 const SkillContext = createContext<SkillContextType | undefined>(undefined);
+
+function normalizeBasePath(baseUrl: string): string {
+    const normalizedSegments = baseUrl
+        .trim()
+        .split('/')
+        .filter((segment) => segment.length > 0 && segment !== '.');
+
+    const normalizedPath = normalizedSegments.length > 0
+        ? `/${normalizedSegments.join('/')}`
+        : '/';
+
+    return normalizedPath.endsWith('/') ? normalizedPath : `${normalizedPath}/`;
+}
+
+export function getSkillsIndexCandidateUrls({
+    baseUrl,
+    origin,
+    pathname,
+}: SkillsIndexUrlInput): string[] {
+    const normalizedPathname = pathname.startsWith('/') ? pathname : `/${pathname}`;
+    const firstSegment = normalizedPathname.split('/').filter(Boolean)[0];
+    const rootPath = firstSegment ? `/${firstSegment}/` : '/';
+
+    const candidates = new Set<string>([
+        new URL('skills.json', new URL(normalizeBasePath(baseUrl), origin)).href,
+        `${origin}/skills.json`,
+        `${origin}${rootPath}skills.json`,
+    ]);
+
+    return Array.from(candidates);
+}
 
 export function SkillProvider({ children }: { children: React.ReactNode }) {
     const [skills, setSkills] = useState<Skill[]>([]);
@@ -20,12 +57,11 @@ export function SkillProvider({ children }: { children: React.ReactNode }) {
         if (!silent) setLoading(true);
         try {
             // Fetch skills index
-            const base = import.meta.env.BASE_URL;
-            const candidateUrls = [
-                `${base}skills.json`,
-                '/skills.json',
-                `${window.location.origin}/skills.json`,
-            ];
+            const candidateUrls = getSkillsIndexCandidateUrls({
+                baseUrl: import.meta.env.BASE_URL,
+                origin: window.location.origin,
+                pathname: window.location.pathname,
+            });
 
             let data: Skill[] | null = null;
             let lastError: Error | null = null;
