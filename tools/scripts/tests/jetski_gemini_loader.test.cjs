@@ -123,6 +123,7 @@ async function main() {
         ]),
       /symlink|outside the skills root|regular file/i,
     );
+       console.log("✅ All Jetski Loader Security Checks Passed!");
   } finally {
     fs.rmSync(fixtureRoot, { recursive: true, force: true });
   }
