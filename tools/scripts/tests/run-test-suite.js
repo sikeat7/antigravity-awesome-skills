@@ -58,7 +58,13 @@ function isNetworkTestsEnabled() {
 }
 
 function runNodeCommand(args) {
-  const result = spawnSync(process.execPath, args, { stdio: "inherit" });
+  const result = spawnSync(process.execPath, args, {
+    env: {
+      ...process.env,
+      PYTHONDONTWRITEBYTECODE: process.env.PYTHONDONTWRITEBYTECODE || "1",
+    },
+    stdio: "inherit",
+  });
 
   if (result.error) {
     throw result.error;
